@@ -1,20 +1,38 @@
-﻿// echo_server.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
+﻿#include <iostream>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
-#include <iostream>
+boost::asio::io_service service;
+
+size_t handler_complete(char* buffer, const boost::system::error_code& err, size_t bytes) {
+    bool found = std::find(buffer, buffer + bytes, '\n') < buffer + bytes;
+    if (err || found) {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+void connection() {
+    boost::asio::ip::tcp::acceptor acceptor(service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), 8090));
+    char buff[1024];
+    while (true)
+    {
+        boost::asio::ip::tcp::socket sock(service);
+        acceptor.accept(sock);
+        //        int bytes = read(sock, boost::asio::buffer(buff), boost::bind(handler_complete, buff, _1, _2));
+        int bytes = read(sock, boost::asio::buffer(buff), boost::bind(handler_complete, buff, _1, _2));
+        std::string reply(buff, bytes);
+        std::cout << "message received: " << reply << std::endl;
+        sock.write_some(boost::asio::buffer(reply));
+        sock.close();
+    }
+}
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    setlocale(LC_ALL, "Russian");
+    connection();
 }
-
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
-
-// Советы по началу работы 
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
